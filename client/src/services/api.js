@@ -9,14 +9,15 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 
-  timeout: 15000,
+  timeout: 30000,
 });
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem(
-      "underright_token",
-    );
+    const token =
+      localStorage.getItem(
+        "underright_token",
+      );
 
     if (token) {
       config.headers.Authorization =
@@ -25,23 +26,23 @@ api.interceptors.request.use(
 
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  },
+  (error) =>
+    Promise.reject(error),
 );
 
 api.interceptors.response.use(
   (response) => response,
 
   (error) => {
-    if (error.response?.status === 401) {
+    if (
+      error.response?.status === 401
+    ) {
       const currentPath =
         window.location.pathname;
 
-      const isLoginPage =
-        currentPath === "/login";
-
-      if (!isLoginPage) {
+      if (
+        currentPath !== "/login"
+      ) {
         localStorage.removeItem(
           "underright_token",
         );
@@ -50,7 +51,8 @@ api.interceptors.response.use(
           "underright_user",
         );
 
-        window.location.href = "/login";
+        window.location.href =
+          "/login";
       }
     }
 

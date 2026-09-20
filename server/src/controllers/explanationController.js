@@ -60,10 +60,9 @@ function mapApplication(row) {
 
 function mapAssessment(row) {
   return {
-    id:
-      Number(
-        row.assessment_id,
-      ),
+    id: Number(
+      row.assessment_id,
+    ),
 
     applicationId:
       Number(row.id),
@@ -113,12 +112,10 @@ export async function generateExplanation(
     !Number.isInteger(applicationId) ||
     applicationId <= 0
   ) {
-    return res
-      .status(400)
-      .json({
-        message:
-          "Invalid application ID.",
-      });
+    return res.status(400).json({
+      message:
+        "Invalid application ID.",
+    });
   }
 
   const regenerate =
@@ -154,15 +151,11 @@ export async function generateExplanation(
       [applicationId],
     );
 
-  if (
-    result.rowCount === 0
-  ) {
-    return res
-      .status(404)
-      .json({
-        message:
-          "Application not found.",
-      });
+  if (result.rowCount === 0) {
+    return res.status(404).json({
+      message:
+        "Application not found.",
+    });
   }
 
   const row =
@@ -172,19 +165,17 @@ export async function generateExplanation(
     row.ai_explanation &&
     !regenerate
   ) {
-    return res
-      .status(200)
-      .json({
-        available: true,
+    return res.status(200).json({
+      available: true,
 
-        cached: true,
+      cached: true,
 
-        explanation:
-          row.ai_explanation,
+      explanation:
+        row.ai_explanation,
 
-        generatedAt:
-          row.updated_at,
-      });
+      generatedAt:
+        row.updated_at,
+    });
   }
 
   const application =
@@ -219,19 +210,17 @@ export async function generateExplanation(
         ],
       );
 
-    return res
-      .status(200)
-      .json({
-        available: true,
+    return res.status(200).json({
+      available: true,
 
-        cached: false,
+      cached: false,
 
-        explanation,
+      explanation,
 
-        generatedAt:
-          updateResult.rows[0]
-            .updated_at,
-      });
+      generatedAt:
+        updateResult.rows[0]
+          .updated_at,
+    });
   } catch (error) {
     const providerMessage =
       error.cause?.message ||
@@ -247,47 +236,44 @@ export async function generateExplanation(
       error.code ===
       "GEMINI_NOT_CONFIGURED"
     ) {
-      return res
-        .status(503)
-        .json({
-          available: false,
+      return res.status(503).json({
+        available: false,
 
-          message:
-            "AI explanation is currently unavailable because Gemini has not been configured.",
+        message:
+          "AI explanation is currently unavailable because Gemini has not been configured.",
 
-          fallback:
-            "The deterministic Credit Intelligence Score, component breakdown and underlying signals remain fully available.",
-        });
+        fallback:
+          "The deterministic Credit Intelligence Score, component breakdown and underlying signals remain fully available.",
+      });
     }
 
     if (
       error.code ===
         "GEMINI_RATE_LIMITED" ||
-      providerMessage.includes(
-        "429",
-      )
+      providerMessage.includes("429") ||
+      providerMessage
+        .toLowerCase()
+        .includes("rate limit")
     ) {
-      return res
-        .status(429)
-        .json({
-          available: false,
-
-          message:
-            "AI explanation is temporarily unavailable because the Gemini API usage limit has been reached.",
-
-          fallback:
-            "The deterministic Credit Intelligence Score and factor breakdown remain fully available. Please try again later.",
-        });
-    }
-
-    return res
-      .status(502)
-      .json({
+      return res.status(429).json({
         available: false,
 
         message:
-          "AI explanation is currently unavailable.",
+          "AI explanation is temporarily unavailable because the Gemini API usage limit has been reached.",
 
         fallback:
-          "The deterministic Credit Intelligence Score and factor breakdown remain available. Gemini does not affect the underlying assessment.",
-     
+          "The deterministic Credit Intelligence Score and factor breakdown remain fully available. Please try again later.",
+      });
+    }
+
+    return res.status(502).json({
+      available: false,
+
+      message:
+        "AI explanation is currently unavailable.",
+
+      fallback:
+        "The deterministic Credit Intelligence Score and factor breakdown remain available. Gemini does not affect the underlying assessment.",
+    });
+  }
+}

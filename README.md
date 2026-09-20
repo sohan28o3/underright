@@ -1,119 +1,118 @@
-# UnderRight
+# UNDER RIGHT
 
-**Explainable AI-Powered Credit Intelligence**
+### Explainable AI-Powered Credit Intelligence
 
-UnderRight is a hackathon prototype for next-generation credit underwriting. It is designed to support **New-to-Credit (NTC)** and **thin-file** applicants by combining structured applicant information, alternative financial signals, deterministic credit scoring, and explainable AI.
+UnderRight is a hackathon prototype for explainable, multi-signal credit intelligence and human-centered underwriting support.
 
-The project focuses on making credit decisions easier to understand for an underwriter while keeping the core score transparent, reproducible, and independent of the LLM.
+The system combines structured application information, cash-flow indicators and alternative financial signals to generate a transparent Credit Intelligence Score.
 
----
+The numerical assessment is produced by a deterministic and configurable scoring engine. Google Gemini is used separately to explain the assessment and provide an application-specific Underwriter Copilot.
 
-## Current Project Status
-
-The application has been implemented partially.
-
-### Phase 1 — Project Foundation
-
-Completed:
-
-- React frontend created with Vite
-- Tailwind CSS configured
-- Node.js and Express backend created
-- PostgreSQL connection pool configured
-- Environment-based configuration added
-- Backend health endpoint added
-- CORS configured
-- Helmet security middleware added
-- API rate limiting added
-- Frontend and backend can run independently in local development
-
-### Phase 2 — Database and Credit Scoring Foundation
-
-Completed:
-
-- PostgreSQL database schema created
-- `applications` table created
-- `assessments` table created
-- `chat_messages` table created for future copilot conversations
-- Synthetic demo applicant data added
-- Deterministic credit scoring service implemented
-- Overall score normalized to a 0–100 range
-- Risk bands derived from the deterministic score
-- Scoring split into five explainable components
-
-Current scoring components:
-
-1. Income and employment stability
-2. Debt capacity
-3. Payment behaviour
-4. Cash-flow stability
-5. Account stability
-
-Each component contributes up to 20 points.
-
-> The credit score is calculated by application logic, not by the LLM. AI is intended to explain the result and assist the underwriter, not silently change the score.
-
-### Phase 3 — Frontend Application Shell and Authentication
-
-Completed:
-
-- React application shell
-- Demo authentication flow
-- Protected application routing
-- Navigation/layout structure
-- Frontend structure for the underwriting workflow
-- API-ready frontend organization
-- Initial UI foundation for the remaining credit intelligence features
+> UnderRight is a prototype decision-support system. It is not a production credit-risk model and does not automatically approve or reject credit.
 
 ---
 
-## Problem Statement
+## Problem
 
-Traditional credit models depend heavily on established credit history. This can disadvantage New-to-Credit and thin-file applicants even when they may have stable income, responsible cash-flow behaviour, or other positive financial signals.
+Traditional credit underwriting can depend heavily on conventional credit history.
 
-UnderRight explores a more contextual underwriting workflow by combining:
+Applicants with limited traditional history may nevertheless have useful financial signals such as:
 
-- Traditional applicant information
-- Alternative data signals
-- Deterministic risk scoring
-- Explainable score components
-- AI-generated explanations
-- An underwriter copilot
+- recurring income
+- account cash flow
+- payment consistency
+- existing debt burden
+- account stability
+- utility payment behaviour
 
-The goal is to support better-informed decisions while maintaining transparency and responsible AI practices.
+UnderRight demonstrates how these signals can be combined into a transparent prototype assessment while preserving human oversight.
 
 ---
 
-## High-Level Architecture
+## Solution
+
+UnderRight provides:
+
+- deterministic Credit Intelligence scoring
+- component-level explainability
+- positive and attention signals
+- transparent scoring calculations
+- application history
+- portfolio dashboard analytics
+- AI-generated underwriter explanations
+- application-specific Underwriter Copilot
+- human-in-the-loop decision support
+
+The generative AI layer is deliberately separated from the numerical scoring engine.
+
+---
+
+## Core Design Principle
 
 ```text
-                    ┌──────────────────────────┐
-                    │        React UI          │
-                    │   Vite + Tailwind CSS    │
-                    └────────────┬─────────────┘
-                                 │
-                                 │ REST API
-                                 ▼
-                    ┌──────────────────────────┐
-                    │    Node.js + Express     │
-                    │        Backend           │
-                    └───────┬─────────┬────────┘
-                            │         │
-                            │         │
-                            ▼         ▼
-               ┌────────────────┐   ┌──────────────────┐
-               │ Credit Scoring │   │   Gemini AI      │
-               │     Engine     │   │ Explanation /    │
-               │ Deterministic  │   │ Copilot - Later  │
-               └───────┬────────┘   └──────────────────┘
-                       │
-                       ▼
-               ┌──────────────────┐
-               │    PostgreSQL    │
-               │ Applications     │
-               │ Assessments      │
-               │ Chat Messages    │
-               └──────────────────┘
+Applicant Financial Data
+          |
+          v
+Deterministic Scoring Engine
+          |
+          +---- Credit Intelligence Score
+          +---- Risk Classification
+          +---- Component Scores
+          +---- Positive Signals
+          +---- Attention Signals
+          |
+          v
+      PostgreSQL
+          |
+          +---------------------------+
+          |                           |
+          v                           v
+Dashboard / History             Gemini API
+                                Explanation
+                                Copilot
+```
+
+Gemini receives the completed deterministic assessment as read-only context.
+
+Gemini does not calculate or alter the numerical score.
+
+---
+
+## Architecture
+
+```text
++------------------------------------------------+
+|                React Frontend                  |
+|                                                |
+| Login                                          |
+| Dashboard                                      |
+| New Assessment                                 |
+| Assessment Results                             |
+| Application History                            |
+| Application Details                            |
+| Underwriter Copilot                            |
++------------------------+-----------------------+
+                         |
+                         | REST / JWT
+                         v
++------------------------------------------------+
+|              Node.js / Express API             |
+|                                                |
+| Authentication                                 |
+| Input Validation                               |
+| Application APIs                               |
+| Dashboard Aggregation                          |
+|                                                |
+|  +-------------------+  +-------------------+  |
+|  | Scoring Service   |  | Gemini Service    |  |
+|  |                   |  |                   |  |
+|  | Deterministic     |  | Explanation       |  |
+|  | Score: 0 - 100    |  | Copilot           |  |
+|  +---------+---------+  +---------+---------+  |
++------------|----------------------|------------+
+             |                      |
+             v                      v
+       PostgreSQL              Gemini API
 ```
 
 ---
@@ -122,32 +121,286 @@ The goal is to support better-informed decisions while maintaining transparency 
 
 ### Frontend
 
-- React JS
+- React
 - Vite
 - Tailwind CSS
 - React Router
-- Recharts planned for analytics and score visualizations
+- Axios
+- Recharts
+- Lucide React
+- React Markdown
 
 ### Backend
 
 - Node.js
 - Express.js
-- REST APIs
-- Helmet
-- CORS
-- Rate limiting
-
-### Database
-
+- JavaScript
 - PostgreSQL
+- node-postgres (`pg`)
+- Zod
+- JSON Web Tokens
+- Helmet
+- Express Rate Limit
 
-### AI Layer
+### AI
 
 - Google Gemini API
-- AI explanations
-- Underwriter Copilot
+- `@google/genai`
 
-The AI layer is intentionally separated from the deterministic scoring logic.
+### Deployment Design
+
+- Frontend: Vercel
+- Backend: Render
+- Database: Supabase PostgreSQL
+
+---
+
+## Main Features
+
+### Demo Authentication
+
+UnderRight includes a simple JWT-based demo underwriter login suitable for hackathon demonstration.
+
+Credentials are supplied using environment variables rather than committed source code.
+
+### Dashboard
+
+The dashboard includes:
+
+- total applications
+- average Credit Intelligence Score
+- low-risk applications
+- moderate-risk applications
+- higher-risk applications
+- risk distribution
+- score distribution
+- assessment activity
+- recent applications
+
+Dashboard information is retrieved from PostgreSQL through the backend API.
+
+### New Credit Assessment
+
+The assessment workflow captures:
+
+Applicant information:
+
+- applicant name
+- optional email
+- employment type
+- employment duration
+- credit purpose
+
+Financial information:
+
+- monthly income
+- requested amount
+- existing monthly debt
+- average monthly balance
+
+Cash-flow information:
+
+- monthly credits
+- monthly debits
+- income regularity
+
+Payment and account information:
+
+- utility payment rate
+- missed payments
+- account age
+
+Protected demographic attributes are not collected.
+
+Applicant name and email are excluded from scoring.
+
+---
+
+## Credit Intelligence Scoring
+
+The prototype uses five components worth up to 20 points each.
+
+```text
+Income / Employment Stability     20
+Debt Capacity                     20
+Payment Behaviour                 20
+Cash Flow Stability               20
+Account Stability                 20
+                                  ---
+Total                            100
+```
+
+### Risk Bands
+
+```text
+80 - 100    Low Risk
+65 - 79     Moderate-Low Risk
+50 - 64     Moderate Risk
+35 - 49     High Risk
+0  - 34     Very High Risk
+```
+
+These ranges are configurable prototype rules and are not presented as production lending standards.
+
+---
+
+## Example Assessment
+
+Example input:
+
+```text
+Employment duration       24 months
+Monthly income            ₹60,000
+Requested credit          ₹120,000
+Existing monthly debt     ₹10,000
+Average balance           ₹28,000
+Monthly credits           ₹65,000
+Monthly debits            ₹42,000
+Income regularity         High
+Utility payment rate      96%
+Missed payments           1
+Account age               30 months
+```
+
+Example deterministic result:
+
+```text
+Income Stability          17 / 20
+Debt Capacity             14 / 20
+Payment Behaviour         17 / 20
+Cash Flow Stability       17 / 20
+Account Stability         14 / 20
+
+Total                     79 / 100
+
+Risk Classification:
+Moderate-Low Risk
+```
+
+---
+
+## Explainability
+
+Every generated assessment includes:
+
+- component scores
+- positive signals
+- risk / attention signals
+- observed financial ratios
+- exact points awarded for each rule
+- calculation transparency
+
+This means the score remains understandable even when Gemini is unavailable.
+
+---
+
+## Gemini Integration
+
+Gemini has two roles.
+
+### AI Assessment Explanation
+
+Gemini receives:
+
+- application financial information
+- completed deterministic score
+- risk classification
+- component scores
+- positive factors
+- attention factors
+- calculation details
+
+It converts these supplied facts into a concise explanation for a human underwriter.
+
+### Underwriter Copilot
+
+The Copilot allows application-specific questions such as:
+
+```text
+Why was this applicant classified at this risk level?
+
+What are the strongest positive indicators?
+
+How is the debt burden affecting the assessment?
+
+What should an underwriter verify manually?
+
+Summarize this application.
+```
+
+Copilot conversations are persisted in PostgreSQL.
+
+---
+
+## Gemini Guardrails
+
+The Gemini system instructions require that it:
+
+1. never recalculates the Credit Intelligence Score
+2. never modifies the score
+3. never changes the supplied risk classification
+4. never approves credit
+5. never rejects credit
+6. never invents applicant information
+7. does not infer protected characteristics
+8. explicitly states when requested information is unavailable
+9. uses neutral professional language
+10. preserves human decision authority
+
+---
+
+## Responsible AI Principles
+
+UnderRight was designed around the following principles.
+
+### No protected characteristics
+
+The scoring engine does not use:
+
+- race
+- ethnicity
+- religion
+- caste
+- gender
+- sexual orientation
+
+### Identity fields do not affect scoring
+
+Applicant name and email are stored only for workflow purposes.
+
+They are not supplied to the deterministic scoring calculations.
+
+### Transparent decision logic
+
+Every score is decomposed into understandable components and rules.
+
+### Generative AI is outside the decision engine
+
+Gemini receives the already-calculated score.
+
+A hallucinated explanation cannot modify the underlying numerical assessment.
+
+### Human oversight
+
+UnderRight does not automatically approve or reject applications.
+
+The final lending decision belongs to an authorized human or governed decision process.
+
+### Synthetic demonstration data
+
+The seeded application records are fictional and intended only for demonstration.
+
+---
+
+## Why We Did Not Train a Custom ML Model
+
+The prototype intentionally avoids training a credit-risk model on arbitrary synthetic data.
+
+A model trained on artificial labels would not provide meaningful evidence of real-world credit-risk performance.
+
+Instead, UnderRight uses an explicit scoring service whose behaviour is deterministic and explainable.
+
+The architecture is modular, so the scoring service could later be supplemented or replaced with a properly validated credit-risk model without requiring major changes to the frontend or application workflow.
 
 ---
 
@@ -155,128 +408,51 @@ The AI layer is intentionally separated from the deterministic scoring logic.
 
 ```text
 underright/
-│
-├── client/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── context/
-│   │   ├── layouts/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── utils/
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── .env.example
-│   └── package.json
-│
-├── server/
-│   ├── database/
-│   │   ├── schema.sql
-│   │   └── seed.sql
-│   ├── src/
-│   │   ├── config/
-│   │   ├── controllers/
-│   │   ├── middleware/
-│   │   ├── routes/
-│   │   ├── services/
-│   │   ├── utils/
-│   │   ├── validators/
-│   │   ├── app.js
-│   │   └── server.js
-│   ├── .env.example
-│   └── package.json
-│
-├── .gitignore
-└── README.md
+|
+|-- client/
+|   |-- src/
+|   |   |-- components/
+|   |   |-- context/
+|   |   |-- layouts/
+|   |   |-- pages/
+|   |   |-- services/
+|   |   |-- utils/
+|   |   |-- App.jsx
+|   |   `-- main.jsx
+|   |
+|   |-- .env.example
+|   |-- vercel.json
+|   `-- package.json
+|
+|-- server/
+|   |-- database/
+|   |   |-- schema.sql
+|   |   `-- seed.sql
+|   |
+|   |-- src/
+|   |   |-- config/
+|   |   |-- controllers/
+|   |   |-- middleware/
+|   |   |-- routes/
+|   |   |-- services/
+|   |   |-- utils/
+|   |   |-- validators/
+|   |   |-- app.js
+|   |   `-- server.js
+|   |
+|   |-- .env.example
+|   `-- package.json
+|
+|-- render.yaml
+|-- .gitignore
+`-- README.md
 ```
 
-The exact folders may evolve as later phases are implemented.
-
 ---
 
-## Credit Scoring Design
+## Local Setup
 
-UnderRight currently uses a deterministic scoring model with a maximum score of **100**.
-
-```text
-Income / Employment Stability     20
-Debt Capacity                     20
-Payment Behaviour                 20
-Cash-flow Stability               20
-Account Stability                 20
-                                  ---
-Total                            100
-```
-
-This approach provides several advantages:
-
-- Reproducible scoring
-- Clear score breakdown
-- Easier debugging
-- Better transparency
-- Reduced dependence on opaque AI decisions
-
-The LLM will not calculate or overwrite the applicant's core credit score.
-
----
-
-## Responsible AI Approach
-
-UnderRight is being designed around the principle that AI should **assist an underwriter, not replace accountable decision-making**.
-
-Current design principles include:
-
-- Deterministic scoring outside the LLM
-- Clear factor-level explanations
-- AI output treated as supporting information
-- No hidden modification of applicant scores
-- Separation of structured calculations from generated text
-- Synthetic data for the hackathon prototype
-- Human review remains part of the underwriting workflow
-
-Future phases will add more explicit AI guardrails and response constraints.
-
----
-
-## Explainability
-
-Explainability is a core part of the project.
-
-Instead of displaying only a single credit score, UnderRight is designed to show:
-
-- Overall score
-- Risk band
-- Individual scoring components
-- Positive factors
-- Risk factors
-- Applicant-level context
-- AI-generated plain-English explanation in a later phase
-
-This allows the underwriter to understand **why** a score was produced.
-
----
-
-## Security Practices
-
-The current implementation includes or is structured around:
-
-- Environment variables for configuration
-- No API keys committed to source control
-- `.env` excluded through `.gitignore`
-- `.env.example` for configuration documentation
-- Helmet security headers
-- CORS configuration
-- API rate limiting
-- Server-side access to AI credentials
-- PostgreSQL credentials kept outside source code
-
-Never commit actual database passwords, Gemini API keys, JWT secrets, or other credentials.
-
----
-
-## Local Development
-
-### Prerequisites
+### Requirements
 
 Install:
 
@@ -287,77 +463,101 @@ Install:
 
 ---
 
-## 1. Clone the Repository
+### 1. Clone the repository
 
 ```bash
-git clone <your-repository-url>
+git clone YOUR_REPOSITORY_URL
 cd underright
 ```
 
 ---
 
-## 2. Install Backend Dependencies
+### 2. Create PostgreSQL database
+
+```sql
+CREATE DATABASE underright;
+```
+
+Run:
+
+```text
+server/database/schema.sql
+```
+
+and then:
+
+```text
+server/database/seed.sql
+```
+
+against the database.
+
+The seed script creates fictional demo applications for dashboard and history demonstration.
+
+---
+
+### 3. Configure backend
 
 ```bash
 cd server
 npm install
 ```
 
-Create the backend environment file from the example configuration.
+Copy:
 
-```bash
-cp .env.example .env
+```text
+.env.example
 ```
 
-On Windows Command Prompt, you can instead use:
+to:
 
-```cmd
-copy .env.example .env
+```text
+.env
 ```
 
-Fill the `.env` file with your own local configuration.
+Configure:
 
----
+```env
+NODE_ENV=development
+PORT=5000
 
-## 3. Set Up PostgreSQL
+DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/underright
+DATABASE_SSL=false
 
-Create a PostgreSQL database for the project.
+CLIENT_URLS=http://localhost:5173
 
-Then run the schema:
+JWT_SECRET=YOUR_SECRET
+JWT_EXPIRES_IN=8h
 
-```bash
-psql -U postgres -d underright -f database/schema.sql
+DEMO_USER_NAME=Demo Underwriter
+DEMO_USER_EMAIL=underwriter@underright.demo
+DEMO_USER_PASSWORD=YOUR_DEMO_PASSWORD
+
+GEMINI_API_KEY=YOUR_GEMINI_API_KEY
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
-Load the synthetic demo data:
-
-```bash
-psql -U postgres -d underright -f database/seed.sql
-```
-
-If your database name or PostgreSQL user is different, update the command accordingly.
-
----
-
-## 4. Start the Backend
-
-From the `server` directory:
+Run:
 
 ```bash
 npm run dev
 ```
 
-The backend currently runs locally on port `5000` unless configured otherwise.
+Backend:
+
+```text
+http://localhost:5000
+```
 
 Health check:
 
 ```text
-GET /api/health
+http://localhost:5000/api/health
 ```
 
 ---
 
-## 5. Install Frontend Dependencies
+### 4. Configure frontend
 
 Open another terminal:
 
@@ -366,29 +566,34 @@ cd client
 npm install
 ```
 
-Create the frontend environment file if required:
+Copy:
 
-```bash
-cp .env.example .env
+```text
+.env.example
 ```
 
-On Windows:
+to:
 
-```cmd
-copy .env.example .env
+```text
+.env
 ```
 
----
+Configure:
 
-## 6. Start the Frontend
+```env
+VITE_API_URL=http://localhost:5000/api
 
-From the `client` directory:
+VITE_DEMO_EMAIL=underwriter@underright.demo
+VITE_DEMO_PASSWORD=YOUR_DEMO_PASSWORD
+```
+
+Run:
 
 ```bash
 npm run dev
 ```
 
-Vite normally starts the development application at:
+Frontend:
 
 ```text
 http://localhost:5173
@@ -396,155 +601,222 @@ http://localhost:5173
 
 ---
 
-## Environment Variables
-
-Actual credentials must stay inside local `.env` files and must **not** be committed.
-
-Example backend configuration may include:
-
-```env
-PORT=5000
-DATABASE_URL=your_postgresql_connection_string
-GEMINI_API_KEY=your_gemini_api_key
-JWT_SECRET=your_jwt_secret
-```
-
-Example frontend configuration may include:
-
-```env
-VITE_API_URL=http://localhost:5000/api
-```
-
-Use the variable names already defined by the project's `.env.example` files if they differ.
-
----
-
-## API Direction
-
-The project is designed around an API-first architecture.
-
-Current and planned API areas include:
+## API Overview
 
 ```text
 POST /api/auth/login
-GET  /api/health
 
 GET  /api/dashboard
 
 POST /api/applications
+
 GET  /api/applications
+
 GET  /api/applications/:id
 
 POST /api/applications/:id/explanation
-POST /api/applications/:id/chat
+
 GET  /api/applications/:id/chat
+
+POST /api/applications/:id/chat
+
+GET  /api/health
 ```
 
-Some endpoints belong to later implementation phases and may not yet be active.
-
----
-
-## Demo Data
-
-The project uses synthetic applicant records for development and demonstration.
-
-No real customer financial information is required for the hackathon prototype.
-
-The demo data is intended to include applicants across different risk profiles so the UI can demonstrate:
-
-- Strong applicants
-- Medium-risk applicants
-- Higher-risk applicants
-- Different score component combinations
-
----
-
-## Testing
-
-Basic test coverage will be added as the implementation progresses.
-
-Planned coverage includes:
-
-- Health endpoint
-- Authentication
-- Credit score calculation
-- Risk-band calculation
-- Application API validation
-- AI response guardrails
-
----
-
-## Version Control
-
-The project uses Git and GitHub for version control.
-
-Recommended commit style:
+Protected endpoints require:
 
 ```text
-Initial project setup
-Add PostgreSQL schema and seed data
-Add deterministic credit scoring engine
-Add authentication and protected routes
-Add applicant dashboard
-Add explainable credit assessment UI
-Add Gemini explanation service
-Add underwriter copilot
-Add API tests and validation
-Update documentation
+Authorization: Bearer <JWT>
 ```
 
 ---
 
-## Planned Next Steps
+## Database Tables
 
-The next development phases will focus on completing the underwriting experience, including:
+### applications
 
-- Applicant dashboard
-- Applicant detail view
-- Credit assessment visualization
-- Recharts-based analytics
-- Explainable score breakdown
-- Gemini-powered explanation generation
-- Underwriter Copilot
-- Additional validation and guardrails
-- Unit/API tests
-- Final architecture documentation
-- Deployment preparation
-- Demo-ready polish
+Stores submitted application and financial information.
 
----
+### assessments
 
-## Deployment Direction
+Stores:
 
-The project is being structured so it can later be deployed using:
+- deterministic score
+- risk classification
+- five component scores
+- positive factors
+- attention factors
+- calculation details
+- persisted AI explanation
 
-- **Frontend:** Vercel
-- **Backend:** Render or equivalent
-- **Database:** Supabase PostgreSQL or equivalent
+### chat_messages
 
-The immediate development environment remains local.
+Stores application-specific Copilot conversations.
 
 ---
 
-## Hackathon Focus
+## Security Basics
 
-The prototype is being built around the following engineering priorities:
+The prototype includes:
 
-- Clean and modular code
-- Meaningful naming conventions
-- API-first design
-- Git/GitHub version control
-- Clear README documentation
-- Simple setup and run instructions
-- Architecture documentation
-- Basic test coverage
-- Secure credential handling
-- Responsible AI
-- Explainability and transparency
+- environment-based secrets
+- JWT authentication
+- protected backend routes
+- backend input validation
+- parameterized PostgreSQL queries
+- CORS configuration
+- Helmet security headers
+- API rate limiting
+- server-side Gemini integration
+- hidden Gemini API credentials
+- sanitized server errors
+
+This authentication design is intended for a hackathon prototype, not production identity management.
 
 ---
 
-## Project
+## Deployment
 
-**UnderRight**  
-*Explainable AI-Powered Credit Intelligence*
+### Database — Supabase
+
+Create a Supabase project.
+
+Run:
+
+```text
+server/database/schema.sql
+```
+
+through the Supabase SQL Editor.
+
+Optionally run:
+
+```text
+server/database/seed.sql
+```
+
+for demo records.
+
+Configure the Render backend:
+
+```env
+DATABASE_URL=<Supabase PostgreSQL connection string>
+DATABASE_SSL=true
+```
+
+---
+
+### Backend — Render
+
+Deploy the repository to Render.
+
+Configuration:
+
+```text
+Root Directory:
+server
+
+Build Command:
+npm install
+
+Start Command:
+npm start
+
+Health Check:
+ /api/health
+```
+
+Configure all backend environment variables in Render.
+
+Do not commit API keys or database credentials.
+
+---
+
+### Frontend — Vercel
+
+Deploy the repository to Vercel using:
+
+```text
+Root Directory:
+client
+```
+
+Set:
+
+```env
+VITE_API_URL=https://YOUR_RENDER_BACKEND/api
+```
+
+The included `vercel.json` enables React Router page refreshes.
+
+After receiving the Vercel domain, configure the backend:
+
+```env
+CLIENT_URLS=https://YOUR_PROJECT.vercel.app
+```
+
+For local and production access simultaneously:
+
+```env
+CLIENT_URLS=http://localhost:5173,https://YOUR_PROJECT.vercel.app
+```
+
+---
+
+## Prototype Limitations
+
+UnderRight is intentionally limited in several ways.
+
+It does not include:
+
+- a validated production credit-risk model
+- actual credit bureau integration
+- actual banking integrations
+- regulatory lending policy
+- production authentication
+- advanced RBAC
+- production audit infrastructure
+- fairness monitoring
+- automated lending decisions
+- real applicant data
+
+The deterministic scoring thresholds are demonstration rules rather than validated underwriting standards.
+
+---
+
+## Future Work
+
+Possible extensions include:
+
+- validated machine-learning underwriting models
+- real banking data integrations
+- credit bureau APIs
+- transaction ingestion
+- advanced role-based access
+- audit logging
+- fairness monitoring
+- model governance
+- pgvector-based similar-case retrieval
+- production identity providers
+- AWS Bedrock
+- AWS RDS
+- AWS Secrets Manager
+- real-time financial-data ingestion
+
+---
+
+## Key Architectural Principle
+
+> We intentionally separated the decision engine from the generative AI layer. The prototype uses a transparent, configurable scoring engine to generate the Credit Intelligence Score. Gemini is used only to make the underlying factors easier for human underwriters to understand and investigate. This prevents an LLM hallucination from changing the underlying assessment.
+
+We also intentionally avoided training a custom credit model on arbitrary synthetic data because that would not provide meaningful production credit-risk performance.
+
+The scoring service is modular and can later be replaced or supplemented by a properly validated model without changing the frontend, APIs or overall workflow.
+
+---
+
+## Disclaimer
+
+UnderRight is a hackathon prototype built using synthetic demonstration data.
+
+It is not designed or validated for real lending decisions.
