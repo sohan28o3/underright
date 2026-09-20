@@ -21,14 +21,10 @@ function mapApplication(row) {
       row.credit_purpose,
 
     monthlyIncome:
-      Number(
-        row.monthly_income,
-      ),
+      Number(row.monthly_income),
 
     requestedAmount:
-      Number(
-        row.requested_amount,
-      ),
+      Number(row.requested_amount),
 
     existingMonthlyDebt:
       Number(
@@ -41,14 +37,10 @@ function mapApplication(row) {
       ),
 
     monthlyCredits:
-      Number(
-        row.monthly_credits,
-      ),
+      Number(row.monthly_credits),
 
     monthlyDebits:
-      Number(
-        row.monthly_debits,
-      ),
+      Number(row.monthly_debits),
 
     incomeRegularity:
       row.income_regularity,
@@ -118,9 +110,7 @@ export async function generateExplanation(
     Number(req.params.id);
 
   if (
-    !Number.isInteger(
-      applicationId,
-    ) ||
+    !Number.isInteger(applicationId) ||
     applicationId <= 0
   ) {
     return res
@@ -130,6 +120,9 @@ export async function generateExplanation(
           "Invalid application ID.",
       });
   }
+
+  const regenerate =
+    req.body?.regenerate === true;
 
   const result =
     await pool.query(
@@ -147,7 +140,9 @@ export async function generateExplanation(
           s.account_stability_score,
           s.positive_factors,
           s.risk_factors,
-          s.calculation_details
+          s.calculation_details,
+          s.ai_explanation,
+          s.updated_at
 
         FROM applications a
 
@@ -172,6 +167,25 @@ export async function generateExplanation(
 
   const row =
     result.rows[0];
+
+  if (
+    row.ai_explanation &&
+    !regenerate
+  ) {
+    return res
+      .status(200)
+      .json({
+        available: true,
+
+        cached: true,
+
+        explanation:
+          row.ai_explanation,
+
+        generatedAt:
+          row.updated_at,
+      });
+  }
 
   const application =
     mapApplication(row);
@@ -210,6 +224,8 @@ export async function generateExplanation(
       .json({
         available: true,
 
+        cached: false,
+
         explanation,
 
         generatedAt:
@@ -217,6 +233,16 @@ export async function generateExplanation(
             .updated_at,
       });
   } catch (error) {
+    const providerMessage =
+      error.cause?.message ||
+      error.message ||
+      "";
+
+    console.error(
+      "Gemini explanation error:",
+      providerMessage,
+    );
+
     if (
       error.code ===
       "GEMINI_NOT_CONFIGURED"
@@ -230,15 +256,29 @@ export async function generateExplanation(
             "AI explanation is currently unavailable because Gemini has not been configured.",
 
           fallback:
-            "The deterministic Credit Intelligence Score, component breakdown, positive signals and attention signals remain available for human review.",
+            "The deterministic Credit Intelligence Score, component breakdown and underlying signals remain fully available.",
         });
     }
 
-    console.error(
-      "Gemini explanation error:",
-      error.cause?.message ||
-        error.message,
-    );
+    if (
+      error.code ===
+        "GEMINI_RATE_LIMITED" ||
+      providerMessage.includes(
+        "429",
+      )
+    ) {
+      return res
+        .status(429)
+        .json({
+          available: false,
+
+          message:
+            "AI explanation is temporarily unavailable because the Gemini API usage limit has been reached.",
+
+          fallback:
+            "The deterministic Credit Intelligence Score and factor breakdown remain fully available. Please try again later.",
+        });
+    }
 
     return res
       .status(502)
@@ -250,6 +290,4 @@ export async function generateExplanation(
 
         fallback:
           "The deterministic Credit Intelligence Score and factor breakdown remain available. Gemini does not affect the underlying assessment.",
-      });
-  }
-}
+     

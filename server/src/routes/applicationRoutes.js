@@ -11,6 +11,11 @@ import {
 } from "../controllers/explanationController.js";
 
 import {
+  getChatMessages,
+  sendChatMessage,
+} from "../controllers/chatController.js";
+
+import {
   requireAuth,
 } from "../middleware/authMiddleware.js";
 
@@ -42,6 +47,19 @@ router.post(
     generateExplanation,
   ),
 );
+
+router
+  .route("/:id/chat")
+  .get(
+    asyncHandler(
+      getChatMessages,
+    ),
+  )
+  .post(
+    asyncHandler(
+      sendChatMessage,
+    ),
+  );
 
 router.get(
   "/:id",

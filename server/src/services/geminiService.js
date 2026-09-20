@@ -1,34 +1,62 @@
 import { GoogleGenAI } from "@google/genai";
 
-const SYSTEM_INSTRUCTION = `
-You are the UnderRight AI Underwriter Explanation Assistant.
+const BASE_SYSTEM_INSTRUCTION = `
+You are part of UnderRight, a prototype credit intelligence decision-support system.
 
-UnderRight is a prototype decision-support system for human credit underwriters.
-
-You receive a credit assessment that has already been calculated by a deterministic, transparent scoring engine.
+The numerical Credit Intelligence Score and risk classification are generated before you are called by a deterministic configurable scoring engine.
 
 MANDATORY RULES:
 
-1. Never calculate a new Credit Intelligence Score.
-2. Never modify, increase, decrease, reinterpret, or replace the supplied score.
+1. Never calculate a replacement Credit Intelligence Score.
+2. Never modify, increase, decrease, override, or reinterpret the supplied score.
 3. Never change the supplied risk classification.
 4. Never approve credit.
 5. Never reject credit.
-6. Never recommend an automatic approval or rejection.
-7. Never invent applicant information.
-8. Only use facts explicitly supplied in the assessment context.
-9. If information is unavailable, state that it is unavailable.
-10. Do not infer gender, race, religion, caste, ethnicity, health status, sexual orientation, political affiliation, or any other protected or sensitive characteristic.
-11. Do not infer characteristics from names, locations, employment, or financial behavior.
-12. Applicant name and email are deliberately excluded from your context and must not be requested for scoring.
-13. Explain the deterministic assessment in neutral, professional underwriting language.
-14. Clearly separate positive signals from risk or attention signals.
-15. Identify practical items a human underwriter may want to verify.
-16. Do not claim that the prototype rules are production underwriting standards.
-17. Remind the user that this system is advisory and that an authorized human or governed lending process makes the final decision.
-18. Never claim that generative AI produced the numerical score.
+6. Never make the final lending decision.
+7. Never invent applicant facts.
+8. Only use information explicitly supplied in the context.
+9. If requested information is unavailable, say that it is unavailable.
+10. Never infer gender, race, ethnicity, religion, caste, health status, sexual orientation, political affiliation, or other protected or sensitive characteristics.
+11. Never infer protected attributes from a name, financial activity, occupation, location, or other information.
+12. Explain supplied financial factors neutrally and professionally.
+13. Clearly distinguish observed facts from suggested manual verification.
+14. Do not describe these prototype rules as production lending standards.
+15. When appropriate, remind the user that the final lending decision belongs to an authorized human or governed process.
+`;
 
-Your purpose is explanation only.
+const EXPLANATION_SYSTEM_INSTRUCTION = `
+${BASE_SYSTEM_INSTRUCTION}
+
+You are specifically generating a concise professional assessment explanation for a human underwriter.
+
+Generative AI did not produce the score.
+Your role is explanation only.
+`;
+
+const COPILOT_SYSTEM_INSTRUCTION = `
+${BASE_SYSTEM_INSTRUCTION}
+
+You are the UnderRight Underwriter Copilot.
+
+Answer questions about one selected credit application.
+
+Your role is to help the underwriter:
+- understand why the supplied score exists
+- identify the strongest supplied positive indicators
+- understand supplied attention signals
+- understand component-level scoring
+- summarize the application
+- identify information that may reasonably require manual verification
+
+If asked "Should I approve this applicant?" or similar, do not answer yes or no.
+
+Instead:
+- summarize the relevant supplied factors
+- explain what may warrant verification
+- state that the final decision belongs to the authorized underwriting process
+
+Keep answers concise and useful.
+Normally use 2 to 5 short paragraphs or bullets.
 `;
 
 function getGeminiClient() {
@@ -36,10 +64,9 @@ function getGeminiClient() {
     process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    const error =
-      new Error(
-        "Gemini API key is not configured.",
-      );
+    const error = new Error(
+      "Gemini API key is not configured.",
+    );
 
     error.code =
       "GEMINI_NOT_CONFIGURED";
@@ -50,6 +77,13 @@ function getGeminiClient() {
   return new GoogleGenAI({
     apiKey,
   });
+}
+
+function getModel() {
+  return (
+    process.env.GEMINI_MODEL ||
+    "gemini-3.8-flash"
+  );
 }
 
 function buildApplicationContext(
@@ -121,6 +155,91 @@ function buildAssessmentContext(
   };
 }
 
+function normalizeGeminiError(error) {
+  if (
+    error.code ===
+    "GEMINI_NOT_CONFIGURED"
+  ) {
+    return error;
+  }
+
+  const message =
+    error?.message ||
+    error?.cause?.message ||
+    "";
+
+  const wrappedError =
+    new Error(
+      "Gemini request failed.",
+    );
+
+  wrappedError.cause = error;
+
+  if (
+    message.includes("429") ||
+    message
+      .toLowerCase()
+      .includes("rate limit") ||
+    message
+      .toLowerCase()
+      .includes(
+        "resource_exhausted",
+      )
+  ) {
+    wrappedError.code =
+      "GEMINI_RATE_LIMITED";
+  } else {
+    wrappedError.code =
+      "GEMINI_REQUEST_FAILED";
+  }
+
+  return wrappedError;
+}
+
+async function runGemini({
+  systemInstruction,
+  prompt,
+}) {
+  const ai =
+    getGeminiClient();
+
+  try {
+    const interaction =
+      await ai.interactions.create({
+        model: getModel(),
+
+        system_instruction:
+          systemInstruction,
+
+        input: prompt,
+
+        generation_config: {
+          temperature: 0.2,
+        },
+      });
+
+    const text =
+      interaction.output_text?.trim();
+
+    if (!text) {
+      const error = new Error(
+        "Gemini returned an empty response.",
+      );
+
+      error.code =
+        "GEMINI_EMPTY_RESPONSE";
+
+      throw error;
+    }
+
+    return text;
+  } catch (error) {
+    throw normalizeGeminiError(
+      error,
+    );
+  }
+}
+
 export function isGeminiConfigured() {
   return Boolean(
     process.env.GEMINI_API_KEY,
@@ -131,13 +250,6 @@ export async function generateAssessmentExplanation(
   application,
   assessment,
 ) {
-  const ai =
-    getGeminiClient();
-
-  const model =
-    process.env.GEMINI_MODEL ||
-    "gemini-3.8-flash";
-
   const applicationContext =
     buildApplicationContext(
       application,
@@ -151,12 +263,7 @@ export async function generateAssessmentExplanation(
   const prompt = `
 Explain the following UnderRight prototype credit assessment for a human underwriter.
 
-IMPORTANT:
-The supplied Credit Intelligence Score and risk level are immutable outputs from a deterministic scoring service.
-
-Do not recalculate them.
-Do not propose a different score.
-Do not approve or reject credit.
+The supplied score and risk level are immutable.
 
 APPLICATION FINANCIAL DATA:
 ${JSON.stringify(applicationContext, null, 2)}
@@ -164,80 +271,84 @@ ${JSON.stringify(applicationContext, null, 2)}
 DETERMINISTIC ASSESSMENT:
 ${JSON.stringify(assessmentContext, null, 2)}
 
-Produce a concise professional explanation using exactly these sections:
+Use exactly these sections:
 
 Assessment Overview
-Provide 2 to 3 sentences explaining the supplied score and risk classification without recalculating either value.
 
 Strongest Positive Signals
-Provide 2 to 4 short bullet points using only supplied information.
 
 Main Attention Signals
-Provide 2 to 4 short bullet points using only supplied information. If no material risk factors are supplied, state that clearly.
 
 Suggested Manual Verification
-Provide 2 to 4 practical things an authorized human underwriter may want to verify based only on the supplied information. Do not invent missing documents or facts.
 
 Advisory Note
-State clearly that:
-- UnderRight is a prototype decision-support tool.
-- the numerical score was generated by deterministic configurable rules, not generative AI.
-- this explanation does not constitute an approval or rejection.
-- the final decision belongs to an authorized human or governed lending process.
 
-Keep the response under approximately 350 words.
+Keep the response below approximately 350 words.
 Do not use a markdown table.
 `;
 
-  try {
-    const interaction =
-      await ai.interactions.create({
-        model,
+  return runGemini({
+    systemInstruction:
+      EXPLANATION_SYSTEM_INSTRUCTION,
 
-        system_instruction:
-          SYSTEM_INSTRUCTION,
+    prompt,
+  });
+}
 
-        input: prompt,
+export async function askUnderwriterCopilot(
+  application,
+  assessment,
+  conversation,
+  question,
+) {
+  const applicationContext =
+    buildApplicationContext(
+      application,
+    );
 
-        generation_config: {
-          temperature: 0.2,
-        },
-      });
+  const assessmentContext =
+    buildAssessmentContext(
+      assessment,
+    );
 
-    const text =
-      interaction.output_text?.trim();
+  const recentConversation =
+    conversation.map(
+      (message) => ({
+        role: message.role,
+        message:
+          message.message,
+      }),
+    );
 
-    if (!text) {
-      const error =
-        new Error(
-          "Gemini returned an empty response.",
-        );
+  const prompt = `
+You are answering a question about one UnderRight credit application.
 
-      error.code =
-        "GEMINI_EMPTY_RESPONSE";
+APPLICATION FINANCIAL DATA:
+${JSON.stringify(applicationContext, null, 2)}
 
-      throw error;
-    }
+IMMUTABLE DETERMINISTIC ASSESSMENT:
+${JSON.stringify(assessmentContext, null, 2)}
 
-    return text;
-  } catch (error) {
-    if (
-      error.code ===
-      "GEMINI_NOT_CONFIGURED"
-    ) {
-      throw error;
-    }
+RECENT COPILOT CONVERSATION:
+${JSON.stringify(recentConversation, null, 2)}
 
-    const wrappedError =
-      new Error(
-        "Gemini explanation generation failed.",
-      );
+CURRENT UNDERWRITER QUESTION:
+${question}
 
-    wrappedError.code =
-      "GEMINI_REQUEST_FAILED";
+Answer only from the supplied information.
 
-    wrappedError.cause = error;
+Do not recalculate the score.
+Do not change the risk level.
+Do not approve or reject credit.
+Do not invent missing information.
 
-    throw wrappedError;
-  }
+If the question requests unavailable information, clearly say it is not available in the supplied application.
+`;
+
+  return runGemini({
+    systemInstruction:
+      COPILOT_SYSTEM_INSTRUCTION,
+
+    prompt,
+  });
 }
