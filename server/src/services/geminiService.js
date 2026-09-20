@@ -1,0 +1,243 @@
+import { GoogleGenAI } from "@google/genai";
+
+const SYSTEM_INSTRUCTION = `
+You are the UnderRight AI Underwriter Explanation Assistant.
+
+UnderRight is a prototype decision-support system for human credit underwriters.
+
+You receive a credit assessment that has already been calculated by a deterministic, transparent scoring engine.
+
+MANDATORY RULES:
+
+1. Never calculate a new Credit Intelligence Score.
+2. Never modify, increase, decrease, reinterpret, or replace the supplied score.
+3. Never change the supplied risk classification.
+4. Never approve credit.
+5. Never reject credit.
+6. Never recommend an automatic approval or rejection.
+7. Never invent applicant information.
+8. Only use facts explicitly supplied in the assessment context.
+9. If information is unavailable, state that it is unavailable.
+10. Do not infer gender, race, religion, caste, ethnicity, health status, sexual orientation, political affiliation, or any other protected or sensitive characteristic.
+11. Do not infer characteristics from names, locations, employment, or financial behavior.
+12. Applicant name and email are deliberately excluded from your context and must not be requested for scoring.
+13. Explain the deterministic assessment in neutral, professional underwriting language.
+14. Clearly separate positive signals from risk or attention signals.
+15. Identify practical items a human underwriter may want to verify.
+16. Do not claim that the prototype rules are production underwriting standards.
+17. Remind the user that this system is advisory and that an authorized human or governed lending process makes the final decision.
+18. Never claim that generative AI produced the numerical score.
+
+Your purpose is explanation only.
+`;
+
+function getGeminiClient() {
+  const apiKey =
+    process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    const error =
+      new Error(
+        "Gemini API key is not configured.",
+      );
+
+    error.code =
+      "GEMINI_NOT_CONFIGURED";
+
+    throw error;
+  }
+
+  return new GoogleGenAI({
+    apiKey,
+  });
+}
+
+function buildApplicationContext(
+  application,
+) {
+  return {
+    employmentType:
+      application.employmentType,
+
+    employmentMonths:
+      application.employmentMonths,
+
+    creditPurpose:
+      application.creditPurpose,
+
+    monthlyIncome:
+      application.monthlyIncome,
+
+    requestedAmount:
+      application.requestedAmount,
+
+    existingMonthlyDebt:
+      application.existingMonthlyDebt,
+
+    averageMonthlyBalance:
+      application.averageMonthlyBalance,
+
+    monthlyCredits:
+      application.monthlyCredits,
+
+    monthlyDebits:
+      application.monthlyDebits,
+
+    incomeRegularity:
+      application.incomeRegularity,
+
+    utilityPaymentRate:
+      application.utilityPaymentRate,
+
+    missedPayments:
+      application.missedPayments,
+
+    accountAgeMonths:
+      application.accountAgeMonths,
+  };
+}
+
+function buildAssessmentContext(
+  assessment,
+) {
+  return {
+    totalScore:
+      assessment.totalScore,
+
+    riskLevel:
+      assessment.riskLevel,
+
+    components:
+      assessment.components,
+
+    positiveFactors:
+      assessment.positiveFactors,
+
+    riskFactors:
+      assessment.riskFactors,
+
+    calculationDetails:
+      assessment.calculationDetails,
+  };
+}
+
+export function isGeminiConfigured() {
+  return Boolean(
+    process.env.GEMINI_API_KEY,
+  );
+}
+
+export async function generateAssessmentExplanation(
+  application,
+  assessment,
+) {
+  const ai =
+    getGeminiClient();
+
+  const model =
+    process.env.GEMINI_MODEL ||
+    "gemini-3.8-flash";
+
+  const applicationContext =
+    buildApplicationContext(
+      application,
+    );
+
+  const assessmentContext =
+    buildAssessmentContext(
+      assessment,
+    );
+
+  const prompt = `
+Explain the following UnderRight prototype credit assessment for a human underwriter.
+
+IMPORTANT:
+The supplied Credit Intelligence Score and risk level are immutable outputs from a deterministic scoring service.
+
+Do not recalculate them.
+Do not propose a different score.
+Do not approve or reject credit.
+
+APPLICATION FINANCIAL DATA:
+${JSON.stringify(applicationContext, null, 2)}
+
+DETERMINISTIC ASSESSMENT:
+${JSON.stringify(assessmentContext, null, 2)}
+
+Produce a concise professional explanation using exactly these sections:
+
+Assessment Overview
+Provide 2 to 3 sentences explaining the supplied score and risk classification without recalculating either value.
+
+Strongest Positive Signals
+Provide 2 to 4 short bullet points using only supplied information.
+
+Main Attention Signals
+Provide 2 to 4 short bullet points using only supplied information. If no material risk factors are supplied, state that clearly.
+
+Suggested Manual Verification
+Provide 2 to 4 practical things an authorized human underwriter may want to verify based only on the supplied information. Do not invent missing documents or facts.
+
+Advisory Note
+State clearly that:
+- UnderRight is a prototype decision-support tool.
+- the numerical score was generated by deterministic configurable rules, not generative AI.
+- this explanation does not constitute an approval or rejection.
+- the final decision belongs to an authorized human or governed lending process.
+
+Keep the response under approximately 350 words.
+Do not use a markdown table.
+`;
+
+  try {
+    const interaction =
+      await ai.interactions.create({
+        model,
+
+        system_instruction:
+          SYSTEM_INSTRUCTION,
+
+        input: prompt,
+
+        generation_config: {
+          temperature: 0.2,
+        },
+      });
+
+    const text =
+      interaction.output_text?.trim();
+
+    if (!text) {
+      const error =
+        new Error(
+          "Gemini returned an empty response.",
+        );
+
+      error.code =
+        "GEMINI_EMPTY_RESPONSE";
+
+      throw error;
+    }
+
+    return text;
+  } catch (error) {
+    if (
+      error.code ===
+      "GEMINI_NOT_CONFIGURED"
+    ) {
+      throw error;
+    }
+
+    const wrappedError =
+      new Error(
+        "Gemini explanation generation failed.",
+      );
+
+    wrappedError.code =
+      "GEMINI_REQUEST_FAILED";
+
+    wrappedError.cause = error;
+
+    throw wrappedError;
+  }
+}

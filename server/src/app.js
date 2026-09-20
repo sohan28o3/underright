@@ -8,9 +8,15 @@ import pool from "./config/db.js";
 
 import authRoutes from "./routes/authRoutes.js";
 import applicationRoutes from "./routes/applicationRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 
-import { notFoundMiddleware } from "./middleware/notFoundMiddleware.js";
-import { errorMiddleware } from "./middleware/errorMiddleware.js";
+import {
+  notFoundMiddleware,
+} from "./middleware/notFoundMiddleware.js";
+
+import {
+  errorMiddleware,
+} from "./middleware/errorMiddleware.js";
 
 dotenv.config();
 
@@ -23,6 +29,7 @@ app.use(
     origin:
       process.env.CLIENT_URL ||
       "http://localhost:5173",
+
     credentials: true,
   }),
 );
@@ -33,43 +40,75 @@ app.use(
   }),
 );
 
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 300,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-});
+const apiLimiter =
+  rateLimit({
+    windowMs:
+      15 * 60 * 1000,
+
+    limit: 300,
+
+    standardHeaders:
+      "draft-8",
+
+    legacyHeaders: false,
+  });
 
 app.use("/api", apiLimiter);
 
-app.get("/api/health", async (req, res) => {
-  try {
-    const result = await pool.query(
-      "SELECT NOW() AS database_time",
-    );
+app.get(
+  "/api/health",
+  async (req, res) => {
+    try {
+      const result =
+        await pool.query(
+          "SELECT NOW() AS database_time",
+        );
 
-    return res.status(200).json({
-      status: "ok",
-      service: "UnderRight API",
-      database: "connected",
-      databaseTime:
-        result.rows[0].database_time,
-    });
-  } catch (error) {
-    console.error(
-      "Health check database error:",
-      error.message,
-    );
+      return res
+        .status(200)
+        .json({
+          status: "ok",
 
-    return res.status(503).json({
-      status: "error",
-      service: "UnderRight API",
-      database: "unavailable",
-    });
-  }
-});
+          service:
+            "UnderRight API",
 
-app.use("/api/auth", authRoutes);
+          database:
+            "connected",
+
+          databaseTime:
+            result.rows[0]
+              .database_time,
+        });
+    } catch (error) {
+      console.error(
+        "Health check database error:",
+        error.message,
+      );
+
+      return res
+        .status(503)
+        .json({
+          status: "error",
+
+          service:
+            "UnderRight API",
+
+          database:
+            "unavailable",
+        });
+    }
+  },
+);
+
+app.use(
+  "/api/auth",
+  authRoutes,
+);
+
+app.use(
+  "/api/dashboard",
+  dashboardRoutes,
+);
 
 app.use(
   "/api/applications",

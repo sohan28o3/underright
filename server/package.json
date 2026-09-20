@@ -1,7 +1,7 @@
 {
   "name": "underright-server",
   "version": "1.0.0",
-  "description": "UnderRight credit intelligence backend",
+  "description": "",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
@@ -11,7 +11,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "@google/genai": "^2.23.0",
     "cors": "^2.8.6",

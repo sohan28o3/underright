@@ -6,25 +6,48 @@ import {
   listApplications,
 } from "../controllers/applicationController.js";
 
-import { requireAuth } from "../middleware/authMiddleware.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
+import {
+  generateExplanation,
+} from "../controllers/explanationController.js";
 
-const router = express.Router();
+import {
+  requireAuth,
+} from "../middleware/authMiddleware.js";
+
+import {
+  asyncHandler,
+} from "../utils/asyncHandler.js";
+
+const router =
+  express.Router();
 
 router.use(requireAuth);
 
 router
   .route("/")
   .get(
-    asyncHandler(listApplications),
+    asyncHandler(
+      listApplications,
+    ),
   )
   .post(
-    asyncHandler(createApplication),
+    asyncHandler(
+      createApplication,
+    ),
   );
+
+router.post(
+  "/:id/explanation",
+  asyncHandler(
+    generateExplanation,
+  ),
+);
 
 router.get(
   "/:id",
-  asyncHandler(getApplicationById),
+  asyncHandler(
+    getApplicationById,
+  ),
 );
 
 export default router;
